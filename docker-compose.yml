@@ -1,0 +1,44 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: pos-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: test_vn
+      MYSQL_DATABASE: test_vn
+    ports:
+      - "33306:3306"
+    volumes:
+      - ./data:/var/lib/mysql
+    restart: unless-stopped # Auto-restart MySQL on failure
+    networks:
+      - pos-network
+  pos_backend:
+    image: quangdat385/pos-backend:v0
+    container_name: pos-backend
+    restart: unless-stopped # Auto-restart Backend on failure
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - mysql
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=host.docker.internal;Port=33306;Database=test_vn;User=root;Password=test_vn;SslMode=None;AllowPublicKeyRetrieval=True;Pooling=true;Min Pool Size=2;Max Pool Size=10;
+    networks:
+      - pos-network
+  pos_frontend:
+    image: quangdat385/pos-frontend:v0
+    container_name: pos-frontend
+    restart: unless-stopped # Auto-restart Frontend on failure
+    ports:
+      - "4000:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - pos_backend
+    networks:
+      - pos-network
+networks:
+  pos-network:
+    driver: bridge

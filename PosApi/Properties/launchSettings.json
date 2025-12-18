@@ -1,0 +1,22 @@
+{
+    "profiles": {
+        "http": {
+            "commandName": "Project",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            },
+            "dotnetRunMessages": true,
+            "applicationUrl": "http://localhost:8080;https://localhost:7224"
+        },
+        "https": {
+            "commandName": "Project",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Production"
+            },
+            "dotnetRunMessages": true,
+            "applicationUrl": "https://localhost:7224;http://localhost:8080",
+            "nativeDebugging": true
+        }
+    },
+    "$schema": "https://json.schemastore.org/launchsettings.json"
+}

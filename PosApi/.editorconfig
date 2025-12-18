@@ -1,0 +1,35 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size =4
+tab_width =4
+
+[*.{cs,csx}]
+# C# formatting/style preferences
+dotnet_sort_system_directives_first = true
+csharp_new_line_before_open_brace = all
+csharp_indent_block_contents = true
+csharp_indent_braces = false
+csharp_indent_labels = flush_left
+csharp_preserve_single_line_statements = false
+csharp_preserve_single_line_blocks = false
+
+# Code style (examples)
+dotnet_diagnostic.IDE0005.severity = suggestion
+csharp_style_qualification_for_field = false:suggestion
+csharp_style_qualification_for_property = false:suggestion
+csharp_style_qualification_for_method = false:suggestion
+csharp_style_qualification_for_event = false:suggestion
+
+# Use spaces for indentation
+indent_style = space
+indent_size =4
+
+[*.{cs}]
+# Organize usings on save (handled by editor/omnisharp)
+file_header_template = ""

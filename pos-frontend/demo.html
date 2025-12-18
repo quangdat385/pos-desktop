@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>POS Sales + Realtime Orders</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+</head>
+
+<body class="bg-blue-100 min-h-screen">
+  <!-- ...existing code... -->
+  <div class="mx-auto p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h1 class="text-2xl font-bold">Chào Mừng Đến Với Hệ Thống Bán Hàng Của Chúng Tôi</h1>
+      <div class="space-x-2">
+        <button id="open-realtime" class="bg-purple-600 text-white px-4 py-2 rounded">Mở Cửa Sổ Mới</button>
+        <button id="toggle-embedded" class="bg-gray-700 text-white px-4 py-2 rounded">Hiện/Ẩn Realtime</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-5 gap-4">
+      <!-- POS Screen -->
+      <div class="bg-white p-4 rounded shadow col-span-4">
+        <div id="category-filter" class="mb-3 flex flex-wrap gap-2"></div>
+        <div id="product-list" class="grid grid-cols-5 gap-3"></div>
+        <div id="product-pagination" class="mt-3 flex items-center justify-between"></div>
+
+        <div class="mt-6 border-t pt-4">
+          <h3 class="text-lg font-semibold mb-2">Giỏ hàng <span id="cart-count"
+              class="text-sm text-gray-600 font-normal"></span></h3>
+          <ul id="cart-list" class="divide-y"></ul>
+          <div class="mt-4 flex items-center justify-between">
+            <h3 class="font-semibold">Tổng: <span id="cart-total">0 ₫</span></h3>
+            <div class="space-x-2">
+              <button id="clear-btn" class="bg-red-500 text-white px-4 py-2 rounded flex-1">Xóa giỏ</button>
+              <button id="checkout-btn" class="bg-blue-600 text-white px-4 py-2 rounded">Thanh
+                toán</button>
+            </div>
+          </div>
+          <p id="status" class="mt-3 text-green-600 font-medium hidden">Thanh toán thành công!</p>
+        </div>
+      </div>
+
+      <!-- Realtime Screen (embedded) -->
+      <div id="embedded-realtime" class="bg-white p-4 rounded shadow col-span-1 h-full overflow-auto">
+        <h2 class="text-xl font-semibold mb-3">Màn hình phụ – Đơn hàng realtime</h2>
+        <div class="text-sm text-gray-600 mb-3">Tự động cập nhật khi có đơn hàng mới.</div>
+        <ul id="orders-list" class="divide-y"></ul>
+      </div>
+    </div>
+  </div>
+  <!-- ...existing code... -->
+
+  <script>
+    // Demo product data
+    const products = [
+      { id: 1, name: 'Cà phê sữa', price: 25000, quantity: 5, category: 'Beverages' },
+      { id: 2, name: 'Bánh mì thịt', price: 30000, quantity: 10, category: 'Food' },
+      { id: 3, name: 'Trà đá', price: 10000, quantity: 20, category: 'Beverages' },
+      { id: 4, name: 'Phở bò', price: 40000, quantity: 8, category: 'Food' },
+      { id: 5, name: 'Nước suối', price: 15000, quantity: 15, category: 'Beverages' },
+      { id: 6, name: 'Bún chả', price: 35000, quantity: 12, category: 'Food' },
+      { id: 7, name: 'Sinh tố bơ', price: 30000, quantity: 7, category: 'Beverages' },
+      { id: 8, name: 'Gỏi cuốn', price: 20000, quantity: 18, category: 'Food' },
+      { id: 9, name: 'Cà phê đen', price: 20000, quantity: 9, category: 'Beverages' },
+      { id: 10, name: 'Cháo gà', price: 30000, quantity: 14, category: 'Food' },
+      { id: 11, name: 'Nước cam', price: 25000, quantity: 11, category: 'Beverages' },
+      { id: 12, name: 'Bánh xèo', price: 40000, quantity: 6, category: 'Food' },
+      { id: 13, name: 'Trà sữa', price: 30000, quantity: 13, category: 'Beverages' },
+      { id: 14, name: 'Cơm tấm', price: 35000, quantity: 10, category: 'Food' },
+      { id: 15, name: 'Nước dừa', price: 20000, quantity: 16, category: 'Beverages' },
+      { id: 16, name: 'Mì Quảng', price: 45000, quantity: 5, category: 'Food' },
+      { id: 17, name: 'Cà phê bạc xỉu', price: 25000, quantity: 8, category: 'Beverages' },
+      { id: 18, name: 'Hủ tiếu', price: 30000, quantity: 12, category: 'Food' },
+      { id: 19, name: 'Sữa chua uống', price: 15000, quantity: 20, category: 'Beverages' },
+      { id: 20, name: 'Bánh bao', price: 20000, quantity: 15, category: 'Food' },
+      { id: 21, name: 'Trà chanh', price: 10000, quantity: 18, category: 'Beverages' },
+      { id: 22, name: 'Xôi gà', price: 30000, quantity: 9, category: 'Food' },
+      { id: 23, name: 'Nước ép dưa hấu', price: 25000, quantity: 14, category: 'Beverages' },
+      { id: 24, name: 'Bánh cuốn', price: 35000, quantity: 7, category: 'Food' },
+      { id: 25, name: 'Cà phê trứng', price: 30000, quantity: 11, category: 'Beverages' },
+      { id: 26, name: 'Lẩu cá kèo', price: 50000, quantity: 6, category: 'Food' },
+      { id: 27, name: 'Soda chanh', price: 20000, quantity: 17, category: 'Beverages' },
+      { id: 28, name: 'Bò kho', price: 40000, quantity: 10, category: 'Food' },
+      { id: 29, name: 'Trà hoa cúc', price: 15000, quantity: 19, category: 'Beverages' },
+      { id: 30, name: 'Chè thập cẩm', price: 25000, quantity: 13, category: 'Food' },
+
+    ];
+
+    const cart = [];
+    const ordersChannel = new BroadcastChannel('orders-channel'); // realtime sync across windows
+    const ORDERS_STORAGE_KEY = 'pos_orders';
+
+    const formatCurrency = (v) =>
+      new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(v);
+    const formatTime = (date) =>
+      new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+
+    const productListEl = document.getElementById('product-list');
+    const productPaginationEl = document.getElementById('product-pagination');
+    const categoryFilterEl = document.getElementById('category-filter');
+    const searchInputEl = document.getElementById('search-input');
+    const searchBtnEl = document.getElementById('search-btn');
+    const cartListEl = document.getElementById('cart-list');
+    const cartTotalEl = document.getElementById('cart-total');
+    const cartCountEl = document.getElementById('cart-count');
+    const checkoutBtn = document.getElementById('checkout-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const statusEl = document.getElementById('status');
+
+    const ordersListEl = document.getElementById('orders-list');
+    const openRealtimeBtn = document.getElementById('open-realtime');
+    const toggleEmbeddedBtn = document.getElementById('toggle-embedded');
+    const embeddedRealtimeEl = document.getElementById('embedded-realtime');
+
+    // Category + Pagination state and helpers
+    let selectedCategory = 'Tất cả';
+    let searchTerm = '';
+    let currentPage = 1;
+    let pageSize = 20; // will be adjusted dynamically
+    const ROWS_PER_COLUMN = 5; // requirement: 5 items per column
+
+    function getGridColumnCount() {
+      if (!productListEl) return 1;
+      const style = window.getComputedStyle(productListEl);
+      const tpl = style.getPropertyValue('grid-template-columns') || '';
+      const count = tpl.split(' ').filter(Boolean).length;
+      if (count > 0) return count;
+      // Fallback to breakpoints if computed style not ready
+      return window.matchMedia('(min-width: 768px)').matches ? 5 : 1;
+    }
+
+    function recalcPageSize() {
+      const cols = getGridColumnCount();
+      const newSize = Math.max(ROWS_PER_COLUMN, ROWS_PER_COLUMN * cols);
+      if (newSize !== pageSize) {
+        pageSize = newSize;
+        // Clamp current page if total pages changed
+        const total = getTotalPages();
+        if (currentPage > total) currentPage = total;
+      }
+    }
+
+    function getCategories() {
+      const set = new Set(products.map(p => p.category));
+      return ['Tất cả', ...Array.from(set)];
+    }
+
+    function getFilteredProducts() {
+      const byCategory = selectedCategory === 'Tất cả' ? products : products.filter(p => p.category === selectedCategory);
+      if (!searchTerm) return byCategory;
+      const q = searchTerm.toLowerCase();
+      return byCategory.filter(p => p.name.toLowerCase().includes(q));
+    }
+
+    const getTotalPages = () => {
+      const totalItems = getFilteredProducts().length;
+      return Math.max(1, Math.ceil(totalItems / pageSize));
+    };
+    function goToPage(n) {
+      const total = getTotalPages();
+      currentPage = Math.min(total, Math.max(1, n));
+      renderProducts();
+    }
+    function nextPage() { goToPage(currentPage + 1); }
+    function prevPage() { goToPage(currentPage - 1); }
+
+    function renderProductPagination() {
+      const total = getTotalPages();
+      if (!productPaginationEl) return;
+      productPaginationEl.innerHTML = `
+        <button id="prev-page" class="px-3 py-1 border rounded ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}">Trước</button>
+        <span class="text-sm text-gray-700">Trang ${currentPage} / ${total}</span>
+        <button id="next-page" class="px-3 py-1 border rounded ${currentPage === total ? 'opacity-50 cursor-not-allowed' : ''}">Sau</button>
+      `;
+      const prevBtn = document.getElementById('prev-page');
+      const nextBtn = document.getElementById('next-page');
+      if (prevBtn) prevBtn.addEventListener('click', () => { if (currentPage > 1) prevPage(); });
+      if (nextBtn) nextBtn.addEventListener('click', () => { if (currentPage < total) nextPage(); });
+    }
+
+    // Search events
+    if (searchBtnEl) {
+      searchBtnEl.addEventListener('click', () => {
+        searchTerm = (searchInputEl?.value || '').trim();
+        currentPage = 1;
+        renderProducts();
+      });
+    }
+    if (searchInputEl) {
+      searchInputEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          searchTerm = (searchInputEl.value || '').trim();
+          currentPage = 1;
+          renderProducts();
+        }
+      });
+    }
+
+    function renderCategoryFilter() {
+      const cats = getCategories();
+      categoryFilterEl.innerHTML = '';
+      cats.forEach(cat => {
+        const btn = document.createElement('button');
+        const isActive = selectedCategory === cat;
+        btn.className = `px-3 py-1 rounded border ${isActive ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700'}`;
+        btn.textContent = cat;
+        btn.addEventListener('click', () => {
+          selectedCategory = cat;
+          currentPage = 1;
+          renderProducts();
+        });
+        categoryFilterEl.appendChild(btn);
+      });
+    }
+
+    // Render POS products
+    function renderProducts() {
+      // Ensure pageSize matches current column count
+      recalcPageSize();
+      renderCategoryFilter();
+      productListEl.innerHTML = '';
+      const filtered = getFilteredProducts();
+      const start = (currentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageProducts = filtered.slice(start, end);
+      pageProducts.forEach(p => {
+        const row = document.createElement('div');
+        row.className = 'border rounded p-3 flex flex-col gap-2';
+        const inCartQty = getCartQty(p.id);
+        row.innerHTML = `
+          <div>
+            <div class="font-medium">${p.name}</div>
+            <div class="text-sm text-gray-600">${formatCurrency(p.price)}</div>
+            <div class="text-xs text-gray-500">Còn lại: ${p.quantity - inCartQty}</div>
+            <div class="mt-1 text-xs">
+              <span id="incart-${p.id}" class="ml-0 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 ${inCartQty ? '' : 'hidden'}">Trong giỏ: ${inCartQty}</span>
+            </div>
+          </div>
+          <div class="mt-auto flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <label class="text-sm text-gray-700" for="qty-${p.id}">SL:</label>
+              <div class="flex items-center gap-1">
+                <button id="dec-${p.id}" class="px-2 py-1 border rounded">-</button>
+                <input id="qty-${p.id}" type="number" min="1" value="1" class="w-14 text-center border rounded px-1 py-1" />
+                <button id="inc-${p.id}" class="px-2 py-1 border rounded">+</button>
+              </div>
+            </div>
+            <button data-action="add" class="bg-green-600 text-white px-3 py-2 rounded flex-1">Thêm</button>
+          </div>
+        `;
+        const qtyInput = row.querySelector(`#qty-${p.id}`);
+        const decBtn = row.querySelector(`#dec-${p.id}`);
+        const incBtn = row.querySelector(`#inc-${p.id}`);
+
+        decBtn.addEventListener('click', () => {
+          const current = Math.max(1, parseInt(qtyInput.value || '1', 10) - 1);
+          qtyInput.value = String(current);
+        });
+        incBtn.addEventListener('click', () => {
+          const current = Math.max(1, parseInt(qtyInput.value || '1', 10) + 1);
+          qtyInput.value = String(current);
+        });
+
+        const addBtn = row.querySelector('[data-action="add"]');
+        addBtn.addEventListener('click', () => {
+          const qty = Math.max(1, parseInt(qtyInput.value || '1', 10));
+          addToCart(p, qty);
+        });
+        productListEl.appendChild(row);
+      });
+      renderProductPagination();
+      updateInCartBadges();
+    }
+
+    // Render cart
+    function renderCart() {
+      cartListEl.innerHTML = '';
+      cart.forEach((item, idx) => {
+        const li = document.createElement('li');
+        li.className = 'flex items-center justify-between py-2';
+        const lineTotal = item.price * item.qty;
+        li.innerHTML = `
+                    <div>
+                        <div class="font-medium">${item.name}</div>
+                        <div class="text-sm text-gray-600">Đơn giá: ${formatCurrency(item.price)}</div>
+                        <div class="mt-1 flex items-center gap-2">
+                            <span class="text-sm">SL:</span>
+                            <div class="flex items-center gap-1">
+                                <button class="px-2 py-1 border rounded" data-action="dec">-</button>
+                                <input type="number" min="1" value="${item.qty}" class="w-16 text-center border rounded px-2 py-1" />
+                                <button class="px-2 py-1 border rounded" data-action="inc">+</button>
+                            </div>
+                            <span class="text-sm text-gray-600">Thành tiền: <span class="font-medium">${formatCurrency(lineTotal)}</span></span>
+                        </div>
+                    </div>
+                    <button class="text-red-600 hover:underline" data-action="remove">Xóa</button>
+                `;
+        const decBtn = li.querySelector('[data-action="dec"]');
+        const incBtn = li.querySelector('[data-action="inc"]');
+        const qtyInput = li.querySelector('input[type="number"]');
+        const removeBtn = li.querySelector('[data-action="remove"]');
+
+        decBtn.addEventListener('click', () => {
+          const newQty = Math.max(1, parseInt(qtyInput.value || '1', 10) - 1);
+          qtyInput.value = String(newQty);
+          updateCartItemQty(idx, newQty);
+        });
+        incBtn.addEventListener('click', () => {
+          const newQty = Math.max(1, parseInt(qtyInput.value || '1', 10) + 1);
+          qtyInput.value = String(newQty);
+          updateCartItemQty(idx, newQty);
+        });
+        qtyInput.addEventListener('change', () => {
+          const newQty = Math.max(1, parseInt(qtyInput.value || '1', 10));
+          qtyInput.value = String(newQty);
+          updateCartItemQty(idx, newQty);
+        });
+        removeBtn.addEventListener('click', () => removeFromCart(idx));
+
+        cartListEl.appendChild(li);
+      });
+      const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+      const count = cart.reduce((sum, i) => sum + i.qty, 0);
+      cartTotalEl.textContent = formatCurrency(total);
+      cartCountEl.textContent = count ? `(${count} món)` : '';
+      updateInCartBadges();
+    }
+
+    function addToCart(product, qty = 1) {
+      statusEl.classList.add('hidden');
+      const existingIndex = cart.findIndex(i => i.id === product.id);
+      if (existingIndex >= 0) {
+        cart[existingIndex].qty += qty;
+      } else {
+        cart.push({ ...product, qty });
+      }
+      renderCart();
+    }
+
+    function removeFromCart(index) {
+      statusEl.classList.add('hidden');
+      cart.splice(index, 1);
+      renderCart();
+    }
+
+    function updateCartItemQty(index, qty) {
+      if (!cart[index]) return;
+      cart[index].qty = qty;
+      renderCart();
+    }
+
+    function getCartQty(productId) {
+      const item = cart.find(i => i.id === productId);
+      return item ? item.qty : 0;
+    }
+
+    function updateInCartBadges() {
+      products.forEach(p => {
+        const el = document.getElementById(`incart-${p.id}`);
+        if (!el) return;
+        const qty = getCartQty(p.id);
+        if (qty > 0) {
+          el.textContent = `Trong giỏ: ${qty}`;
+          el.classList.remove('hidden');
+        } else {
+          el.classList.add('hidden');
+        }
+      });
+    }
+
+    function clearCart() {
+      statusEl.classList.add('hidden');
+      cart.length = 0;
+      renderCart();
+    }
+
+    // Simulated backend call (replace with your real API)
+    async function submitSaleToBackend(payload) {
+      // Example real call:
+      // const res = await fetch('http://localhost:3000/api/sales', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(payload),
+      // });
+      // if (!res.ok) throw new Error('Backend error');
+      // return await res.json();
+
+      // Simulate delay and response
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return { success: true, orderId: 'ORD-' + Math.floor(100000 + Math.random() * 900000) };
+    }
+
+    async function checkout() {
+      statusEl.classList.add('hidden');
+      const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+      if (cart.length === 0) {
+        alert('Giỏ hàng trống.');
+        return;
+      }
+      const payload = {
+        items: cart.map(c => ({ id: c.id, name: c.name, price: c.price, qty: c.qty })),
+        total,
+      };
+      try {
+        const res = await submitSaleToBackend(payload);
+        const order = {
+          id: res.orderId,
+          total,
+          paidAt: new Date().toISOString(),
+        };
+
+        // Persist & broadcast
+        persistOrder(order);
+        ordersChannel.postMessage(order);
+
+        statusEl.textContent = 'Thanh toán thành công!';
+        statusEl.classList.remove('hidden');
+        clearCart();
+      } catch (e) {
+        alert('Thanh toán thất bại.');
+      }
+    }
+
+    checkoutBtn.addEventListener('click', checkout);
+    clearBtn.addEventListener('click', clearCart);
+
+    // Realtime Orders: persistence and rendering
+    function getStoredOrders() {
+      try {
+        return JSON.parse(localStorage.getItem(ORDERS_STORAGE_KEY) || '[]');
+      } catch {
+        return [];
+      }
+    }
+
+    function persistOrder(order) {
+      const orders = getStoredOrders();
+      orders.unshift(order); // newest first
+      localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
+      renderOrders();
+    }
+
+    function renderOrders() {
+      const orders = getStoredOrders();
+      ordersListEl.innerHTML = '';
+      if (orders.length === 0) {
+        ordersListEl.innerHTML = '<li class="py-2 text-gray-500">Chưa có đơn hàng.</li>';
+        return;
+      }
+      orders.forEach(o => {
+        const li = document.createElement('li');
+        li.className = 'py-2';
+        li.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="font-medium">Mã đơn: ${o.id}</div>
+            <div class="text-blue-700 font-semibold">${formatCurrency(o.total)}</div>
+          </div>
+          <div class="text-sm text-gray-600">Thời gian thanh toán: ${formatTime(new Date(o.paidAt))}</div>
+        `;
+        ordersListEl.appendChild(li);
+      });
+    }
+
+    // Listen for realtime updates from other windows
+    ordersChannel.onmessage = (ev) => {
+      const order = ev.data;
+      const orders = getStoredOrders();
+      // Avoid duplicate insert if it's already the latest
+      if (!orders.find(o => o.id === order.id)) {
+        orders.unshift(order);
+        localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
+      }
+      renderOrders();
+    };
+
+    // Open a new window that shows only the realtime screen (same file, with query flag)
+    openRealtimeBtn.addEventListener('click', () => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('realtimeOnly', '1');
+      window.open(url.toString(), '_blank', 'width=560,height=720');
+    });
+
+    // Toggle embedded realtime panel
+    toggleEmbeddedBtn.addEventListener('click', () => {
+      const hidden = embeddedRealtimeEl.classList.contains('hidden');
+      if (hidden) embeddedRealtimeEl.classList.remove('hidden');
+      else embeddedRealtimeEl.classList.add('hidden');
+    });
+
+    // If opened as realtime-only window, hide POS UI and show only realtime panel
+    function applyRealtimeOnlyViewIfNeeded() {
+      const params = new URLSearchParams(window.location.search);
+      const realtimeOnly = params.get('realtimeOnly') === '1';
+      if (realtimeOnly) {
+        // Hide POS container, show only realtime
+        document.querySelectorAll('.grid > div').forEach((el, idx) => {
+          if (idx === 0) el.classList.add('hidden'); // POS panel
+          if (idx === 1) el.classList.remove('hidden'); // Realtime panel
+        });
+        document.getElementById('open-realtime')?.classList.add('hidden');
+        document.getElementById('toggle-embedded')?.classList.add('hidden');
+        // Make realtime panel occupy full width in the popup
+        const gridContainer = document.querySelector('.grid');
+        if (gridContainer) {
+          gridContainer.classList.remove('grid-cols-5');
+          gridContainer.classList.add('grid-cols-1');
+        }
+        if (embeddedRealtimeEl) {
+          embeddedRealtimeEl.classList.remove('col-span-1');
+          embeddedRealtimeEl.classList.add('col-span-3', 'w-full');
+        }
+      }
+    }
+
+    // Resize handling to keep 5 items per column across breakpoints
+    function debounce(fn, wait = 150) {
+      let t;
+      return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
+    }
+    window.addEventListener('resize', debounce(() => {
+      const before = pageSize;
+      recalcPageSize();
+      if (pageSize !== before) renderProducts();
+    }, 150));
+
+    // Initial render
+    recalcPageSize();
+    renderProducts();
+    renderCart();
+    renderOrders();
+    applyRealtimeOnlyViewIfNeeded();
+
+    // Keep embedded realtime visible by default
+    embeddedRealtimeEl.classList.remove('hidden');
+  </script>
+</body>
+
+</html>

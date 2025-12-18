@@ -1,0 +1,24 @@
+# Build artifacts
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+
+# Git and IDE
+.git
+.gitignore
+.vscode/
+
+# Logs
+logs/
+
+# OS files
+[Tt]humbs.db
+[Dd]esktop.ini
+
+# Misc
+*.mdf
+*.ldf
+*.sqlite*
